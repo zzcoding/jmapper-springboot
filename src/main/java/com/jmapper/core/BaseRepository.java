@@ -98,10 +98,8 @@ public class BaseRepository extends JdbcTemplate {
             autoKeyfield.setAccessible(true);
             try {
                 autoKeyfield.set(entity, key);
-            } catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+              throw new RuntimeException(e);
             }
         }
         return entity;
