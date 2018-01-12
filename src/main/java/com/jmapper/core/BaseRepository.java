@@ -45,7 +45,7 @@ import freemarker.template.TemplateException;
  * Date:2016年4月25日下午1:39:54 <br>
  * Copyright (c) 2016, zinggozhao@163.com All Rights Reserved. <br>
  *
- * @author 赵广
+ * @author zhaoguang
  */
 public class BaseRepository extends JdbcTemplate {
 
