@@ -20,7 +20,8 @@ import com.jmapper.core.mapper.ClassType;
 import com.jmapper.core.mapper.KeyPropertyType;
 import com.jmapper.core.mapper.PropertyType;
 import org.apache.commons.dbutils.BasicRowProcessor;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
@@ -49,7 +50,8 @@ import freemarker.template.TemplateException;
  */
 public class BaseRepository extends JdbcTemplate {
 
-    Logger logger = Logger.getLogger(BaseRepository.class);
+    Logger logger = LoggerFactory.getLogger(this.getClass());
+
     private final BasicRowProcessor convert = new BasicRowProcessor();
 
     protected NamedParameterJdbcTemplate namedParameterJdbcTemplate;
@@ -84,7 +86,7 @@ public class BaseRepository extends JdbcTemplate {
                 ps.executeUpdate();
                 ResultSet rs = ps.getGeneratedKeys();
                 if (rs.next()) {
-                    logger.debug(rs.getObject(1));
+                    logger.debug("{}", rs.getObject(1));
                     return rs.getObject(1);
                 } else {
                     return null;
@@ -97,9 +99,16 @@ public class BaseRepository extends JdbcTemplate {
         if (autoKeyfield != null && (idValue == null || (isWrapClass(idValue.getClass()) && idValue.toString().equals("0")))) {
             autoKeyfield.setAccessible(true);
             try {
-                autoKeyfield.set(entity, key);
+                Object objKey = autoKeyfield.get(entity);
+                if (objKey instanceof Integer && key instanceof Long) {
+                    int intKey = ((Long) key).intValue();
+                    autoKeyfield.set(entity, intKey);
+                } else {
+                    autoKeyfield.set(entity, key);
+                }
+
             } catch (Exception e) {
-              throw new RuntimeException(e);
+                throw new RuntimeException(e);
             }
         }
         return entity;
@@ -122,15 +131,15 @@ public class BaseRepository extends JdbcTemplate {
         }
 
         String insertSQL = "";
-        List<Object[]> paramList =new ArrayList<Object[]>();
+        List<Object[]> paramList = new ArrayList<Object[]>();
 
         for (T e : entityList) {
             GenerInsertSql generInsertSql = new GenerInsertSql<T>(e).invoke();
             List<Object> params = generInsertSql.getParams();
             paramList.add(params.toArray());
-            insertSQL=generInsertSql.getInsertSQL();
+            insertSQL = generInsertSql.getInsertSQL();
         }
-        batchUpdate(insertSQL,paramList);
+        batchUpdate(insertSQL, paramList);
 
     }
 
@@ -682,7 +691,8 @@ public class BaseRepository extends JdbcTemplate {
             logger.debug(resultSql);
 
         } catch (Exception e) {
-            logger.debug(e);
+            logger.debug("{}", e);
+            throw new ServiceSupportException(e);
         }
         return resultSql;
 
@@ -725,7 +735,8 @@ public class BaseRepository extends JdbcTemplate {
             logger.debug(resultSql);
 
         } catch (Exception e) {
-            logger.debug(e);
+            logger.debug("{}", e);
+            throw new ServiceSupportException(e);
         }
         return resultSql;
 
@@ -1177,7 +1188,7 @@ public class BaseRepository extends JdbcTemplate {
             }
             logger.debug(entityMapper.getTable());
             params = new ArrayList<Object>();
-            List<PropertyType> propertyTypes = new  ArrayList<PropertyType>();
+            List<PropertyType> propertyTypes = new ArrayList<PropertyType>();
 
             StringBuffer buffer = new StringBuffer("insert into ");
             buffer.append(entityMapper.getTable());
@@ -1218,7 +1229,7 @@ public class BaseRepository extends JdbcTemplate {
                 }
             }
             propertyTypes.addAll(entityMapper.getProperty());
-            for (PropertyType ep : propertyTypes ) {
+            for (PropertyType ep : propertyTypes) {
 
                 if (feildBuffer.length() == 0) {
                     feildBuffer.append(ep.getColumn());
