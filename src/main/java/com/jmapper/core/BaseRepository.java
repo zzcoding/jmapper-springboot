@@ -677,6 +677,7 @@ public class BaseRepository extends JdbcTemplate {
 
         } catch (Exception e) {
             logger.debug("{}", e);
+            throw new ServiceSupportException(e);
         }
         return resultSql;
 
@@ -694,7 +695,7 @@ public class BaseRepository extends JdbcTemplate {
                                                                                Map<String, Object> parameterMap) {
         List<Map<String, Object>> resultList = null;
         try {
-            String templateSql = getTemplatePageCountSql(mapper, parameterMap);
+            String templateSql = getTemplateSql(mapper, parameterMap);
             String countSql = getCountSqlFromOrgSql(mapper, templateSql, parameterMap);
             int totalCount = queryForIntNamedParameter(countSql, parameterMap);
             pageModel.setRecordCount(totalCount);
@@ -725,7 +726,7 @@ public class BaseRepository extends JdbcTemplate {
                                                                  Object... args) {
         List<Map<String, Object>> resultList = null;
         try {
-            String templateSql = getTemplatePageCountSql(mapper);
+            String templateSql = getTemplateSql(mapper);
             String countSql = getCountSqlFromOrgSql(mapper, templateSql);
             int totalCount = this.queryForInt(countSql, args);
             pageModel.setRecordCount(totalCount);
@@ -783,7 +784,7 @@ public class BaseRepository extends JdbcTemplate {
      */
     private String getCountSqlFromOrgSql(String mapper, String resultSql, Map<String, Object> parameterMap) {
 
-        String templateSql = getTemplateSql(mapper + ".count", parameterMap);
+        String templateSql = getTemplatePageCountSql(mapper + ".count", parameterMap);
         String countSql = "";
         if (templateSql == null) {
             int formIndex = resultSql.indexOf("from") == -1 ? resultSql.indexOf("FROM") : resultSql.indexOf("from");
@@ -814,7 +815,7 @@ public class BaseRepository extends JdbcTemplate {
                                                       Object... args) {
         List<T> resultList = null;
         try {
-            String templateSql = getTemplatePageCountSql(mapper);
+            String templateSql = getTemplateSql(mapper);
             String countSql = getCountSqlFromOrgSql(mapper, templateSql);
             int totalCount = this.queryForInt(countSql, args);
             pageModel.setRecordCount(totalCount);
@@ -851,7 +852,7 @@ public class BaseRepository extends JdbcTemplate {
                                                                     PageModel pageModel, Map<String, Object> parameterMap) {
         List<T> resultList = null;
         try {
-            String templateSql = getTemplatePageCountSql(mapper, parameterMap);
+            String templateSql = getTemplateSql(mapper, parameterMap);
             String countSql = getCountSqlFromOrgSql(mapper, templateSql, parameterMap);
             int totalCount = queryForIntNamedParameter(countSql, parameterMap);
             pageModel.setRecordCount(totalCount);
