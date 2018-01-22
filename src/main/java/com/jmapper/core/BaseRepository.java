@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
+
 import com.jmapper.core.mapper.ClassType;
 import com.jmapper.core.mapper.KeyPropertyType;
 import com.jmapper.core.mapper.PropertyType;
@@ -588,6 +589,31 @@ public class BaseRepository extends JdbcTemplate {
     }
 
     /**
+     * 根据sqlmapper 获得sql语句
+     *
+     * @param mapper
+     * @return
+     */
+
+    public String getTemplatePageCountSql(String mapper) {
+        String resultSql = null;
+        try {
+            Configuration cfg = mapperEngine.getCfg();
+            Template template = cfg.getTemplate(mapper, "utf-8");
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            template.process(null, new OutputStreamWriter(baos));
+            resultSql = baos.toString();
+            resultSql = removeBlank(resultSql);
+            logger.debug(resultSql);
+
+        } catch (Exception e) {
+            logger.debug("{}", e);
+        }
+        return resultSql;
+
+    }
+
+    /**
      * 根据sql命名参数查询int结果集
      *
      * @param countSql
@@ -632,6 +658,32 @@ public class BaseRepository extends JdbcTemplate {
     }
 
     /**
+     * 根据sqlmapper 命名参数获得sql语句
+     *
+     * @param mapper
+     * @param paramaterMap
+     * @return
+     */
+    public String getTemplatePageCountSql(String mapper, Map<String, Object> paramaterMap) {
+        String resultSql = null;
+        try {
+            Configuration cfg = mapperEngine.getCfg();
+            Template template = cfg.getTemplate(mapper, "utf-8");
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            template.process(paramaterMap, new OutputStreamWriter(baos));
+            resultSql = baos.toString();
+            resultSql = removeBlank(resultSql);
+            logger.debug(resultSql);
+
+        } catch (Exception e) {
+            logger.debug("{}", e);
+            throw new ServiceSupportException(e);
+        }
+        return resultSql;
+
+    }
+
+    /**
      * 根据sqlmapper 命名参数分页查询List Map结果集
      *
      * @param mapper
@@ -643,7 +695,7 @@ public class BaseRepository extends JdbcTemplate {
                                                                                Map<String, Object> parameterMap) {
         List<Map<String, Object>> resultList = null;
         try {
-            String templateSql = getTemplateSql(mapper, parameterMap);
+            String templateSql = getTemplatePageCountSql(mapper, parameterMap);
             String countSql = getCountSqlFromOrgSql(mapper, templateSql, parameterMap);
             int totalCount = queryForIntNamedParameter(countSql, parameterMap);
             pageModel.setRecordCount(totalCount);
@@ -674,7 +726,7 @@ public class BaseRepository extends JdbcTemplate {
                                                                  Object... args) {
         List<Map<String, Object>> resultList = null;
         try {
-            String templateSql = getTemplateSql(mapper);
+            String templateSql = getTemplatePageCountSql(mapper);
             String countSql = getCountSqlFromOrgSql(mapper, templateSql);
             int totalCount = this.queryForInt(countSql, args);
             pageModel.setRecordCount(totalCount);
@@ -763,7 +815,7 @@ public class BaseRepository extends JdbcTemplate {
                                                       Object... args) {
         List<T> resultList = null;
         try {
-            String templateSql = getTemplateSql(mapper);
+            String templateSql = getTemplatePageCountSql(mapper);
             String countSql = getCountSqlFromOrgSql(mapper, templateSql);
             int totalCount = this.queryForInt(countSql, args);
             pageModel.setRecordCount(totalCount);
@@ -800,7 +852,7 @@ public class BaseRepository extends JdbcTemplate {
                                                                     PageModel pageModel, Map<String, Object> parameterMap) {
         List<T> resultList = null;
         try {
-            String templateSql = getTemplateSql(mapper, parameterMap);
+            String templateSql = getTemplatePageCountSql(mapper, parameterMap);
             String countSql = getCountSqlFromOrgSql(mapper, templateSql, parameterMap);
             int totalCount = queryForIntNamedParameter(countSql, parameterMap);
             pageModel.setRecordCount(totalCount);
