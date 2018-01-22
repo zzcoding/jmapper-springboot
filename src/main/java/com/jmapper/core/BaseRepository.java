@@ -17,7 +17,6 @@ import javax.sql.DataSource;
 import com.jmapper.core.mapper.ClassType;
 import com.jmapper.core.mapper.KeyPropertyType;
 import com.jmapper.core.mapper.PropertyType;
-import org.apache.commons.dbutils.BasicRowProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -256,7 +255,7 @@ public class BaseRepository extends JdbcTemplate {
     public Map<String, Object> queryForMap(String sql, Object... args) {
         Map<String, Object> resultMap = null;
         try {
-            resultMap = queryForMap(sql, args);
+            resultMap = super.queryForMap(sql, args);
         } catch (IncorrectResultSizeDataAccessException e) {
             logger.debug("queryForMapSimple未查询到唯一结果集！");
         } catch (IncorrectResultSetColumnCountException e) {
@@ -339,7 +338,7 @@ public class BaseRepository extends JdbcTemplate {
         List<T> resultList = null;
         try {
             String templateSql = getTemplateSql(mapper);
-            resultList = queryForList(templateSql, requiredType, args);
+            resultList = super.queryForList(templateSql, requiredType, args);
         } catch (Exception e) {
             e.printStackTrace();
             throw new ServiceSupportException(e);
@@ -377,7 +376,7 @@ public class BaseRepository extends JdbcTemplate {
      * 
      */
     public int queryForInt(String sql, Object... args) {
-        return queryForObject(sql, Integer.class, args);
+        return super.queryForObject(sql, Integer.class, args);
     }
 
     /**
@@ -402,7 +401,7 @@ public class BaseRepository extends JdbcTemplate {
         List<Map<String, Object>> resultList = null;
         try {
             String templateSql = getTemplateSql(mapper);
-            resultList = queryForList(templateSql, args);
+            resultList = super.queryForList(templateSql, args);
         } catch (Exception e) {
             e.printStackTrace();
             throw new ServiceSupportException(e);
@@ -440,7 +439,7 @@ public class BaseRepository extends JdbcTemplate {
         int effCount = 0;
         try {
             String templateSql = getTemplateSql(mapper);
-            effCount = update(templateSql, args);
+            effCount = super.update(templateSql, args);
         } catch (Exception e) {
             e.printStackTrace();
             throw new ServiceSupportException(e);
@@ -493,7 +492,7 @@ public class BaseRepository extends JdbcTemplate {
     public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) {
         T t = null;
         try {
-            t = queryForObject(sql, requiredType, args);
+            t = super.queryForObject(sql, requiredType, args);
         } catch (IncorrectResultSizeDataAccessException e) {
             logger.debug("queryForObject未查询到唯一结果集！");
         } catch (IncorrectResultSetColumnCountException e) {
@@ -607,7 +606,7 @@ public class BaseRepository extends JdbcTemplate {
             logger.debug(resultSql);
 
         } catch (Exception e) {
-            logger.debug("{}", e);
+            logger.debug("{}", e.getMessage());
         }
         return resultSql;
 
@@ -676,8 +675,7 @@ public class BaseRepository extends JdbcTemplate {
             logger.debug(resultSql);
 
         } catch (Exception e) {
-            logger.debug("{}", e);
-            throw new ServiceSupportException(e);
+            logger.debug("{}", e.getMessage());
         }
         return resultSql;
 
@@ -989,7 +987,7 @@ public class BaseRepository extends JdbcTemplate {
         try {
             String templateSql = getTemplateSql(mapper);
             BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType);
-            obj = queryForObject(templateSql, rowMapper);
+            obj = super.queryForObject(templateSql, rowMapper);
         } catch (Exception e) {
             e.printStackTrace();
             logger.debug("queryForEntity未查询到");
