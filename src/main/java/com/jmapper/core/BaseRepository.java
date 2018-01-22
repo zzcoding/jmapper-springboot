@@ -1,7 +1,6 @@
 package com.jmapper.core;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -13,13 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.sql.DataSource;
-
 import com.jmapper.core.mapper.ClassType;
 import com.jmapper.core.mapper.KeyPropertyType;
 import com.jmapper.core.mapper.PropertyType;
-import javafx.scene.control.TableRow;
 import org.apache.commons.dbutils.BasicRowProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,15 +26,12 @@ import org.springframework.jdbc.IncorrectResultSetColumnCountException;
 import org.springframework.jdbc.core.*;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.util.ReflectionUtils;
-
 import com.jmapper.core.engine.MapperEngine;
 import com.jmapper.core.exception.ServiceSupportException;
 import com.jmapper.core.util.BigTableParameter;
 import com.jmapper.core.util.PageModel;
-
 import freemarker.template.Configuration;
 import freemarker.template.Template;
-import freemarker.template.TemplateException;
 
 /**
  * Function: 基础支持类. Project Name:jmapper-core <br>
