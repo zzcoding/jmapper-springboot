@@ -677,7 +677,6 @@ public class BaseRepository extends JdbcTemplate {
 
         } catch (Exception e) {
             logger.debug("{}", e);
-            throw new ServiceSupportException(e);
         }
         return resultSql;
 
