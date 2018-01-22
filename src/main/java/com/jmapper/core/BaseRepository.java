@@ -758,7 +758,7 @@ public class BaseRepository extends JdbcTemplate {
      */
     private String getCountSqlFromOrgSql(String mapper, String resultSql) {
 
-        String templateSql = getTemplateSql(mapper + ".count");
+        String templateSql = getTemplatePageCountSql(mapper + ".count");
         String countSql = "";
         if (templateSql == null) {
             int formIndex = resultSql.indexOf("from") == -1 ? resultSql.indexOf("FROM") : resultSql.indexOf("from");
