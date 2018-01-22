@@ -19,6 +19,7 @@ import javax.sql.DataSource;
 import com.jmapper.core.mapper.ClassType;
 import com.jmapper.core.mapper.KeyPropertyType;
 import com.jmapper.core.mapper.PropertyType;
+import javafx.scene.control.TableRow;
 import org.apache.commons.dbutils.BasicRowProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,7 @@ import freemarker.template.TemplateException;
 
 /**
  * Function: 基础支持类. Project Name:jmapper-core <br>
- * File Name:ServiceSupport.java <br>
+ * File Name:BaseRepository.java <br>
  * Package Name:com.jmapper.core <br>
  * Date:2016年4月25日下午1:39:54 <br>
  * Copyright (c) 2016, zinggozhao@163.com All Rights Reserved. <br>
@@ -55,7 +56,6 @@ public class BaseRepository extends JdbcTemplate {
     private final BasicRowProcessor convert = new BasicRowProcessor();
 
     protected NamedParameterJdbcTemplate namedParameterJdbcTemplate;
-
 
     MapperEngine mapperEngine;
 
@@ -284,23 +284,12 @@ public class BaseRepository extends JdbcTemplate {
     public Map<String, Object> queryForMapByMapper(String mapper, Object... args) {
         Map<String, Object> resultMap = null;
         try {
-
-            Configuration cfg = mapperEngine.getCfg();
-            Template template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(null, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            logger.debug(resultSql);
-            resultMap = queryForMap(resultSql, args);
+            String templateSql = getTemplateSql(mapper);
+            resultMap = queryForMap(templateSql, args);
         } catch (IncorrectResultSizeDataAccessException e) {
             logger.debug("queryForMapSimpleByMapper未查询到唯一结果集！");
         } catch (IncorrectResultSetColumnCountException e) {
             logger.debug("queryForMapSimpleByMapper只能够以一列为结果集！");
-        } catch (TemplateException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         return resultMap;
     }
@@ -315,24 +304,13 @@ public class BaseRepository extends JdbcTemplate {
     public Map<String, Object> queryForMapNamedParameterByMapper(String mapper, Map<String, Object> parameterMap) {
         Map<String, Object> resultMap = null;
         try {
-            Configuration cfg = mapperEngine.getCfg();
-            Template template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(parameterMap, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            logger.debug(resultSql);
-            resultMap = namedParameterJdbcTemplate.queryForMap(resultSql, parameterMap);
+            String templateSql = getTemplateSql(mapper, parameterMap);
+            resultMap = namedParameterJdbcTemplate.queryForMap(templateSql, parameterMap);
         } catch (IncorrectResultSizeDataAccessException e) {
             logger.debug("queryForMapNamedParameterByMapper未查询到唯一结果集！");
         } catch (IncorrectResultSetColumnCountException e) {
             logger.debug("queryForMapNamedParameterByMapper只能够以一列为结果集！");
-        } catch (TemplateException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-
         return resultMap;
     }
 
@@ -346,7 +324,6 @@ public class BaseRepository extends JdbcTemplate {
     public Map<String, Object> queryForMapNamedParameter(String mapper, Map<String, Object> parameterMap) {
         Map<String, Object> resultMap = null;
         try {
-
             resultMap = namedParameterJdbcTemplate.queryForMap(mapper, parameterMap);
         } catch (IncorrectResultSizeDataAccessException e) {
             logger.debug("queryForMapNamedParameter未查询到唯一结果集！");
@@ -367,21 +344,13 @@ public class BaseRepository extends JdbcTemplate {
      * @return
      */
     public <T> List<T> queryForListSimpleByMapper(String mapper, Class<T> requiredType, Object... args) {
-        Configuration cfg = mapperEngine.getCfg();
-        Template template;
         List<T> resultList = null;
         try {
-            template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(null, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            logger.debug(resultSql);
-            resultList = queryForList(resultSql, requiredType, args);
-        } catch (TemplateException e) {
+            String templateSql = getTemplateSql(mapper);
+            resultList = queryForList(templateSql, requiredType, args);
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServiceSupportException(e);
         }
         return resultList;
     }
@@ -397,21 +366,13 @@ public class BaseRepository extends JdbcTemplate {
      */
     public <T> List<T> queryForListNamedParameterByMapper(String mapper, Class<T> requiredType,
                                                           Map<String, Object> parameterMap) {
-        Configuration cfg = mapperEngine.getCfg();
-        Template template;
         List<T> resultList = null;
         try {
-            template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(parameterMap, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            logger.debug(resultSql);
-            resultList = namedParameterJdbcTemplate.queryForList(resultSql, parameterMap, requiredType);
-        } catch (TemplateException e) {
+            String templateSql = getTemplateSql(mapper, parameterMap);
+            resultList = namedParameterJdbcTemplate.queryForList(templateSql, parameterMap, requiredType);
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServiceSupportException(e);
         }
         return resultList;
     }
@@ -446,23 +407,14 @@ public class BaseRepository extends JdbcTemplate {
      * @return
      */
     public List<Map<String, Object>> queryForListMapByMapper(String mapper, Object... args) {
-        Configuration cfg = mapperEngine.getCfg();
         List<Map<String, Object>> resultList = null;
-        Template template;
         try {
-            template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(null, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            logger.debug(resultSql);
-            resultList = queryForList(resultSql, args);
-        } catch (TemplateException e) {
+            String templateSql = getTemplateSql(mapper);
+            resultList = queryForList(templateSql, args);
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServiceSupportException(e);
         }
-
         return resultList;
     }
 
@@ -473,24 +425,15 @@ public class BaseRepository extends JdbcTemplate {
      * @param parameterMap
      * @return
      */
-    public List<Map<String, Object>> queryForListMapNamedParameterByMapper(String mapper, Map<String, ?> parameterMap) {
-        Configuration cfg = mapperEngine.getCfg();
+    public List<Map<String, Object>> queryForListMapNamedParameterByMapper(String mapper, Map<String, Object> parameterMap) {
         List<Map<String, Object>> resultList = null;
-        Template template;
         try {
-            template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(parameterMap, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            logger.debug(resultSql);
-            resultList = namedParameterJdbcTemplate.queryForList(resultSql, parameterMap);
-        } catch (TemplateException e) {
+            String templateSql = getTemplateSql(mapper, parameterMap);
+            resultList = namedParameterJdbcTemplate.queryForList(templateSql, parameterMap);
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServiceSupportException(e);
         }
-
         return resultList;
     }
 
@@ -502,23 +445,14 @@ public class BaseRepository extends JdbcTemplate {
      * @return
      */
     public int executeUpdateByMapper(String mapper, Object... args) {
-        Configuration cfg = mapperEngine.getCfg();
         int effCount = 0;
-        Template template;
         try {
-            template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(null, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            logger.debug(resultSql);
-            effCount = update(resultSql, args);
-        } catch (TemplateException e) {
+            String templateSql = getTemplateSql(mapper);
+            effCount = update(templateSql, args);
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServiceSupportException(e);
         }
-
         return effCount;
     }
 
@@ -529,24 +463,14 @@ public class BaseRepository extends JdbcTemplate {
      * @param parameterMap
      * @return
      */
-    public int executeUpdateNamedParameterByMapper(String mapper, Map<String, ?> parameterMap) {
-        Configuration cfg = mapperEngine.getCfg();
+    public int executeUpdateNamedParameterByMapper(String mapper, Map<String, Object> parameterMap) {
         int effCount = 0;
-        Template template;
         try {
-            template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(parameterMap, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            logger.debug(resultSql);
-            effCount = namedParameterJdbcTemplate.update(resultSql, parameterMap);
-        } catch (TemplateException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+            String templateSql = getTemplateSql(mapper, parameterMap);
+            effCount = namedParameterJdbcTemplate.update(templateSql, parameterMap);
+        } catch (Exception e) {
             e.printStackTrace();
         }
-
         return effCount;
     }
 
@@ -557,9 +481,8 @@ public class BaseRepository extends JdbcTemplate {
      * @param parameterMap
      * @return
      */
-    public int executeUpdateNamedParameterBySql(String sql, Map<String, ?> parameterMap) {
+    public int executeUpdateNamedParameterBySql(String sql, Map<String, Object> parameterMap) {
         int effCount = 0;
-
         sql = removeBlank(sql);
         logger.debug(sql);
         effCount = namedParameterJdbcTemplate.update(sql, parameterMap);
@@ -597,24 +520,16 @@ public class BaseRepository extends JdbcTemplate {
      */
     public <T> T queryForObjectByMapper(String mapper, Class<T> requiredType, Object... args) {
         T t = null;
-        Configuration cfg = mapperEngine.getCfg();
-        Template template;
         try {
-            template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(null, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            logger.debug(resultSql);
-            t = queryForObject(resultSql, requiredType, args);
+            String templateSql = getTemplateSql(mapper);
+            t = queryForObject(templateSql, requiredType, args);
         } catch (IncorrectResultSizeDataAccessException e) {
             logger.debug("queryForObjectByMapper未查询到唯一结果集！");
         } catch (IncorrectResultSetColumnCountException e) {
             logger.debug("queryForObjectByMapper只能够以一列为结果集");
-        } catch (TemplateException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServiceSupportException(e);
         }
         return t;
     }
@@ -628,19 +543,10 @@ public class BaseRepository extends JdbcTemplate {
      */
     public int queryForIntByMapper(String mapper, Object... args) {
         int count = 0;
-        Configuration cfg = mapperEngine.getCfg();
-        Template template;
         try {
-            template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(null, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            logger.debug(resultSql);
-            count = this.queryForInt(resultSql, args);
-        } catch (TemplateException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+            String templateSql = getTemplateSql(mapper);
+            count = this.queryForInt(templateSql, args);
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return count;
@@ -655,20 +561,12 @@ public class BaseRepository extends JdbcTemplate {
      */
     public int queryForIntNamedParameterByMapper(String mapper, Map<String, Object> parameterMap) {
         int count = 0;
-        Configuration cfg = mapperEngine.getCfg();
-        Template template;
         try {
-            template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(parameterMap, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            logger.debug(resultSql);
-            count = queryForIntNamedParameter(resultSql, parameterMap);
-        } catch (TemplateException e) {
+            String templateSql = getTemplateSql(mapper, parameterMap);
+            count = queryForIntNamedParameter(templateSql, parameterMap);
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServiceSupportException(e);
         }
         return count;
     }
@@ -754,27 +652,21 @@ public class BaseRepository extends JdbcTemplate {
                                                                                Map<String, Object> parameterMap) {
         List<Map<String, Object>> resultList = null;
         try {
-            Configuration cfg = mapperEngine.getCfg();
-            Template template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(parameterMap, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            String countSql = getCountSqlFromOrgSql(mapper, resultSql, parameterMap);
+            String templateSql = getTemplateSql(mapper, parameterMap);
+            String countSql = getCountSqlFromOrgSql(mapper, templateSql, parameterMap);
             int totalCount = queryForIntNamedParameter(countSql, parameterMap);
             pageModel.setRecordCount(totalCount);
             if (totalCount == 0) {
                 return new ArrayList<Map<String, Object>>();
             }
-            resultSql = resultSql + " limit :startrow,:pageSize";
-            logger.warn(resultSql);
+            templateSql = templateSql + " limit :startrow,:pageSize";
+            logger.debug("pageSql:{}", templateSql);
             parameterMap.put("startrow", pageModel.getStartRow());
             parameterMap.put("pageSize", pageModel.getPageSize());
-            resultList = namedParameterJdbcTemplate.queryForList(resultSql, parameterMap);
-        } catch (TemplateException e) {
+            resultList = namedParameterJdbcTemplate.queryForList(templateSql, parameterMap);
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServiceSupportException(e);
         }
         return resultList;
     }
@@ -791,31 +683,25 @@ public class BaseRepository extends JdbcTemplate {
                                                                  Object... args) {
         List<Map<String, Object>> resultList = null;
         try {
-            Configuration cfg = mapperEngine.getCfg();
-            Template template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(null, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            String countSql = getCountSqlFromOrgSql(mapper, resultSql);
+            String templateSql = getTemplateSql(mapper);
+            String countSql = getCountSqlFromOrgSql(mapper, templateSql);
             int totalCount = this.queryForInt(countSql, args);
             pageModel.setRecordCount(totalCount);
             if (totalCount == 0) {
                 return new ArrayList<Map<String, Object>>();
             }
-            resultSql = resultSql + " limit ?,?";
-            logger.warn(resultSql);
+            templateSql = templateSql + " limit ?,?";
+            logger.debug("pageSql:{}", templateSql);
             ArrayList<Object> params = new ArrayList<Object>();
             for (Object arg : args) {
                 params.add(arg);
             }
             params.add(pageModel.getStartRow());
             params.add(pageModel.getPageSize());
-            resultList = queryForList(resultSql, params.toArray());
-        } catch (TemplateException e) {
+            resultList = queryForList(templateSql, params.toArray());
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServiceSupportException(e);
         }
         return resultList;
     }
@@ -886,32 +772,26 @@ public class BaseRepository extends JdbcTemplate {
                                                       Object... args) {
         List<T> resultList = null;
         try {
-            Configuration cfg = mapperEngine.getCfg();
-            Template template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(null, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            String countSql = getCountSqlFromOrgSql(mapper, resultSql);
+            String templateSql = getTemplateSql(mapper);
+            String countSql = getCountSqlFromOrgSql(mapper, templateSql);
             int totalCount = this.queryForInt(countSql, args);
             pageModel.setRecordCount(totalCount);
             if (totalCount == 0) {
                 return (List<T>) new ArrayList<T>();
             }
-            resultSql = resultSql + " limit ?,?";
-            logger.warn(resultSql);
+            templateSql = templateSql + " limit ?,?";
+            logger.debug("pageSql:{}", templateSql);
             ArrayList<Object> params = new ArrayList<Object>();
             for (Object arg : args) {
                 params.add(arg);
             }
             params.add(pageModel.getStartRow());
             params.add(pageModel.getPageSize());
-            resultList = queryForEntityList(resultSql, requiredType, params.toArray());
+            resultList = queryForEntityList(templateSql, requiredType, params.toArray());
             ;
-        } catch (TemplateException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServiceSupportException(e);
         }
         return resultList;
     }
@@ -929,27 +809,21 @@ public class BaseRepository extends JdbcTemplate {
                                                                     PageModel pageModel, Map<String, Object> parameterMap) {
         List<T> resultList = null;
         try {
-            Configuration cfg = mapperEngine.getCfg();
-            Template template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(parameterMap, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
-            String countSql = getCountSqlFromOrgSql(mapper, resultSql, parameterMap);
+            String templateSql = getTemplateSql(mapper, parameterMap);
+            String countSql = getCountSqlFromOrgSql(mapper, templateSql, parameterMap);
             int totalCount = queryForIntNamedParameter(countSql, parameterMap);
             pageModel.setRecordCount(totalCount);
             if (totalCount == 0) {
                 return (List<T>) new ArrayList<T>();
             }
-            resultSql = resultSql + " limit :startrow,:pageSize";
-            logger.warn(resultSql);
+            templateSql = templateSql + " limit :startrow,:pageSize";
+            logger.debug("pageSq:{}", templateSql);
             parameterMap.put("startrow", pageModel.getStartRow());
             parameterMap.put("pageSize", pageModel.getPageSize());
-            resultList = queryForEntityListNamedParameter(resultSql, requiredType, parameterMap);
-        } catch (TemplateException e) {
+            resultList = queryForEntityListNamedParameter(templateSql, requiredType, parameterMap);
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServiceSupportException(e);
         }
         return resultList;
     }
@@ -1006,17 +880,11 @@ public class BaseRepository extends JdbcTemplate {
      * @return
      */
     public <T> List<T> queryForEntityListByMapper(String mapper, final Class<T> requiredType, Object... args) {
-        Configuration cfg = mapperEngine.getCfg();
-        Template template;
         List<T> resultList = null;
         try {
-            template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(null, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
+            String templateSql = getTemplateSql(mapper);
             BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType);
-            resultList = query(resultSql, rowMapper, args);
+            resultList = query(templateSql, rowMapper, args);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1075,17 +943,10 @@ public class BaseRepository extends JdbcTemplate {
      */
     public <T> T queryForEntityByMapper(String mapper, final Class<T> requiredType, Object... args) {
         T obj = null;
-        Configuration cfg = mapperEngine.getCfg();
-        Template template;
         try {
-            template = cfg.getTemplate(mapper, "utf-8");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            template.process(null, new OutputStreamWriter(baos));
-            String resultSql = baos.toString();
-            resultSql = removeBlank(resultSql);
+            String templateSql = getTemplateSql(mapper);
             BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType);
-            obj = queryForObject(resultSql, rowMapper);
-
+            obj = queryForObject(templateSql, rowMapper);
         } catch (Exception e) {
             e.printStackTrace();
             logger.debug("queryForEntity未查询到");
