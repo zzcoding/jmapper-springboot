@@ -46,11 +46,9 @@ public class BaseRepository extends JdbcTemplate {
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private final BasicRowProcessor convert = new BasicRowProcessor();
-
     protected NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
-    MapperEngine mapperEngine;
+    protected MapperEngine mapperEngine;
 
 
     /**
