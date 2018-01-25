@@ -105,7 +105,7 @@ public class MapperEngine {
             }
         }
     }
-
+    //初始化所有对象字段和表字段映射
     public void initGlobalPropertyColumnMapping(ClassType classType) {
         if (this.xmlMappedFields == null)
             this.xmlMappedFields = new HashMap<String, String>();
