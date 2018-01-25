@@ -14,6 +14,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
+
+import com.jmapper.core.mapper.BeanPropertyRowMapper;
 import com.jmapper.core.mapper.ClassType;
 import com.jmapper.core.mapper.KeyPropertyType;
 import com.jmapper.core.mapper.PropertyType;
@@ -23,7 +25,10 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.IncorrectResultSetColumnCountException;
-import org.springframework.jdbc.core.*;
+
+import org.springframework.jdbc.core.ConnectionCallback;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.util.ReflectionUtils;
 import com.jmapper.core.engine.MapperEngine;
@@ -571,6 +576,9 @@ public class BaseRepository extends JdbcTemplate {
     public String getTemplateSql(String mapper) {
         String resultSql = null;
         try {
+            String callClass = getCallClass();
+            logger.debug("调用的sqlmapper命名空间：{}", callClass);
+            mapper = callClass == null ? mapper : callClass + "." + mapper;
             Configuration cfg = mapperEngine.getCfg();
             Template template = cfg.getTemplate(mapper, "utf-8");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -597,6 +605,9 @@ public class BaseRepository extends JdbcTemplate {
     public String getTemplatePageCountSql(String mapper) {
         String resultSql = null;
         try {
+            String callClass = getCallClass();
+            logger.debug("调用的sqlmapper命名空间：{}", callClass);
+            mapper = callClass == null ? mapper : callClass + "." + mapper;
             Configuration cfg = mapperEngine.getCfg();
             Template template = cfg.getTemplate(mapper, "utf-8");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -640,6 +651,9 @@ public class BaseRepository extends JdbcTemplate {
     public String getTemplateSql(String mapper, Map<String, Object> paramaterMap) {
         String resultSql = null;
         try {
+            String callClass = getCallClass();
+            logger.debug("调用的sqlmapper命名空间：{}", callClass);
+            mapper = callClass == null ? mapper : callClass + "." + mapper;
             Configuration cfg = mapperEngine.getCfg();
             Template template = cfg.getTemplate(mapper, "utf-8");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -656,6 +670,23 @@ public class BaseRepository extends JdbcTemplate {
 
     }
 
+    public String getCallClass() {
+        StackTraceElement stack[] = Thread.currentThread().getStackTrace();
+        String className = null;
+        for (int i = 0; i < stack.length; i++) {
+            if (this.getClass().getName().equals(stack[i].getClassName()) ||
+                    "java.lang.Thread".equals(stack[i].getClassName())) {
+                continue;
+            } else {
+                String methodName = stack[i].getMethodName();
+                if (!methodName.toUpperCase().endsWith("WITHOUTSELFNAMESPACE"))
+                    className = stack[i].getClassName();
+                break;
+            }
+        }
+        return className;
+    }
+
     /**
      * 根据sqlmapper 命名参数获得sql语句
      *
@@ -666,6 +697,9 @@ public class BaseRepository extends JdbcTemplate {
     public String getTemplatePageCountSql(String mapper, Map<String, Object> paramaterMap) {
         String resultSql = null;
         try {
+            String callClass = getCallClass();
+            logger.debug("调用的sqlmapper命名空间：{}", callClass);
+            mapper = callClass == null ? mapper : callClass + "." + mapper;
             Configuration cfg = mapperEngine.getCfg();
             Template template = cfg.getTemplate(mapper, "utf-8");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -883,7 +917,7 @@ public class BaseRepository extends JdbcTemplate {
         List<T> resultList = null;
         try {
 
-            BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType);
+            BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType,mapperEngine.getXmlMappedFields());
             resultList = namedParameterJdbcTemplate.query(sql, parameterMap, rowMapper);
         } catch (Exception e) {
             e.printStackTrace();
@@ -904,7 +938,7 @@ public class BaseRepository extends JdbcTemplate {
         List<T> resultList = null;
         try {
 
-            BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType);
+            BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType,mapperEngine.getXmlMappedFields());
             resultList = query(sql, rowMapper, args);
         } catch (Exception e) {
             e.printStackTrace();
@@ -946,7 +980,7 @@ public class BaseRepository extends JdbcTemplate {
         T obj = null;
 
         try {
-            BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType);
+            BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType,mapperEngine.getXmlMappedFields());
             obj = namedParameterJdbcTemplate.queryForObject(sql, parameterMap, rowMapper);
 
         } catch (EmptyResultDataAccessException e) {
@@ -966,7 +1000,7 @@ public class BaseRepository extends JdbcTemplate {
     public <T> T queryForEntity(String sql, final Class<T> requiredType, Object... args) {
         T obj = null;
         try {
-            BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType);
+            BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType,mapperEngine.getXmlMappedFields());
             obj = queryForObject(sql, rowMapper, args);
         } catch (EmptyResultDataAccessException e) {
             logger.debug("queryForEntity未查询到");
@@ -986,7 +1020,7 @@ public class BaseRepository extends JdbcTemplate {
         T obj = null;
         try {
             String templateSql = getTemplateSql(mapper);
-            BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType);
+            BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType,mapperEngine.getXmlMappedFields());
             obj = super.queryForObject(templateSql, rowMapper);
         } catch (Exception e) {
             e.printStackTrace();

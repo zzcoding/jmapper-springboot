@@ -9,15 +9,11 @@ import java.util.regex.Pattern;
 
 
 import com.jmapper.core.exception.MappingException;
-import com.jmapper.core.mapper.ClassType;
-import com.jmapper.core.mapper.HibernateMappingType;
-import com.jmapper.core.mapper.SqlMapper;
-import com.jmapper.core.mapper.SqlTemplateMapper;
+import com.jmapper.core.mapper.*;
 import com.jmapper.core.util.JaxbUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
-
 
 
 import freemarker.cache.StringTemplateLoader;
@@ -44,7 +40,15 @@ public class MapperEngine {
     private Map<String, String> sqlTemplateCache = new HashMap<String, String>();
     private Configuration cfg = new Configuration(Configuration.VERSION_2_3_23);
     private StringTemplateLoader stringLoader = new StringTemplateLoader();
+    private Map<String, String> xmlMappedFields;
 
+    public Map<String, String> getXmlMappedFields() {
+        return xmlMappedFields;
+    }
+
+    public void setXmlMappedFields(Map<String, String> xmlMappedFields) {
+        this.xmlMappedFields = xmlMappedFields;
+    }
 
     public void initSqlMapper(List<File> fileList) throws Exception {
         parseSqlMapper(fileList);
@@ -84,7 +88,7 @@ public class MapperEngine {
     public void parseEntityMapper(List<File> fileList) throws Exception {
         for (File file : fileList) {
 
-            String xml = FileUtils.readFileToString(file,"UTF-8");
+            String xml = FileUtils.readFileToString(file, "UTF-8");
             logger.info("################开始缓存entity->" + file.getName());
             JaxbUtil resultBinder = new JaxbUtil(HibernateMappingType.class, JaxbUtil.CollectionWrapper.class);
             HibernateMappingType mapper = resultBinder.fromXml(xml);
@@ -96,8 +100,27 @@ public class MapperEngine {
             if (cached != null) {
                 throw new MappingException(mapper.getClazz().getName() + "在entityCache中已存在！");
             } else {
+                initGlobalPropertyColumnMapping(mapper.getClazz());
                 entityCache.put(mapper.getClazz().getName(), mapper.getClazz());
             }
+        }
+    }
+
+    public void initGlobalPropertyColumnMapping(ClassType classType) {
+        if (this.xmlMappedFields == null)
+            this.xmlMappedFields = new HashMap<String, String>();
+        if (classType.getId() != null) {
+            this.xmlMappedFields.put(classType.getId().getName(), classType.getId().getColumn());
+        }
+        if (classType.getCompositeId() != null) {
+            String keyclazz = classType.getCompositeId().getClazz();
+            List<KeyPropertyType> keyProperty = classType.getCompositeId().getKeyProperty();
+            for (KeyPropertyType keyPropertyType : keyProperty) {
+                this.xmlMappedFields.put(keyPropertyType.getName(), keyPropertyType.getColumn());
+            }
+        }
+        for (PropertyType propertyType : classType.getProperty()) {
+            this.xmlMappedFields.put(propertyType.getName(), propertyType.getColumn());
         }
     }
 
