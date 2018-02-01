@@ -36,10 +36,10 @@ public class BeanPropertyRowMapper<T> implements RowMapper<T> {
     private ConversionService conversionService = DefaultConversionService.getSharedInstance();
     private Map<String, PropertyDescriptor> mappedFields;
     private Set<String> mappedProperties;
-    private Map<String, String> xmlMappedFields;
+    private Map<String, HashMap<String,String>> xmlMappedFields;
 
-    public BeanPropertyRowMapper(Class<T> mappedClass,Map<String, String> xmlMappedFields) {
-        this.xmlMappedFields=xmlMappedFields;
+    public BeanPropertyRowMapper(Class<T> mappedClass, Map<String, HashMap<String,String>> xmlMappedFields) {
+        this.xmlMappedFields = xmlMappedFields;
         this.initialize(mappedClass);
     }
 
@@ -106,7 +106,8 @@ public class BeanPropertyRowMapper<T> implements RowMapper<T> {
                     this.mappedFields.put(underscoredName, pd);
                 }
                 if (xmlMappedFields != null) {
-                    String databaseColname = xmlMappedFields.get(pd.getName());
+                    HashMap<String, String> map = xmlMappedFields.get(mappedClass.getName());
+                    String databaseColname = map.get(pd.getName());
                     if (!org.apache.commons.lang3.StringUtils.isBlank(databaseColname)) {
                         this.mappedFields.put(databaseColname, pd);
                     }
@@ -203,12 +204,11 @@ public class BeanPropertyRowMapper<T> implements RowMapper<T> {
 
     }
 
-
-    public Map<String, String> getXmlMappedFields() {
+    public Map<String, HashMap<String, String>> getXmlMappedFields() {
         return xmlMappedFields;
     }
 
-    public void setXmlMappedFields(Map<String, String> xmlMappedFields) {
+    public void setXmlMappedFields(Map<String, HashMap<String, String>> xmlMappedFields) {
         this.xmlMappedFields = xmlMappedFields;
     }
 

@@ -40,13 +40,13 @@ public class MapperEngine {
     private Map<String, String> sqlTemplateCache = new HashMap<String, String>();
     private Configuration cfg = new Configuration(Configuration.VERSION_2_3_23);
     private StringTemplateLoader stringLoader = new StringTemplateLoader();
-    private Map<String, String> xmlMappedFields;
+    private Map<String, HashMap<String, String>> xmlMappedFields;
 
-    public Map<String, String> getXmlMappedFields() {
+    public Map<String, HashMap<String, String>> getXmlMappedFields() {
         return xmlMappedFields;
     }
 
-    public void setXmlMappedFields(Map<String, String> xmlMappedFields) {
+    public void setXmlMappedFields(Map<String, HashMap<String, String>> xmlMappedFields) {
         this.xmlMappedFields = xmlMappedFields;
     }
 
@@ -105,23 +105,27 @@ public class MapperEngine {
             }
         }
     }
+
     //初始化所有对象字段和表字段映射
     public void initGlobalPropertyColumnMapping(ClassType classType) {
         if (this.xmlMappedFields == null)
-            this.xmlMappedFields = new HashMap<String, String>();
+            this.xmlMappedFields = new HashMap<String, HashMap<String, String>>();
+        HashMap<String, String> fieldsMap = new HashMap<String, String>();
+        String name = classType.getName();
         if (classType.getId() != null) {
-            this.xmlMappedFields.put(classType.getId().getName(), classType.getId().getColumn());
+            fieldsMap.put(classType.getId().getName(), classType.getId().getColumn());
         }
         if (classType.getCompositeId() != null) {
             String keyclazz = classType.getCompositeId().getClazz();
             List<KeyPropertyType> keyProperty = classType.getCompositeId().getKeyProperty();
             for (KeyPropertyType keyPropertyType : keyProperty) {
-                this.xmlMappedFields.put(keyPropertyType.getName(), keyPropertyType.getColumn());
+                fieldsMap.put(keyPropertyType.getName(), keyPropertyType.getColumn());
             }
         }
         for (PropertyType propertyType : classType.getProperty()) {
-            this.xmlMappedFields.put(propertyType.getName(), propertyType.getColumn());
+            fieldsMap.put(propertyType.getName(), propertyType.getColumn());
         }
+        xmlMappedFields.put(name, fieldsMap);
     }
 
     // 读取类路径下所有实体类映射文件
