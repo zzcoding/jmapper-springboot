@@ -1021,7 +1021,7 @@ public class BaseRepository extends JdbcTemplate {
         try {
             String templateSql = getTemplateSql(mapper);
             BeanPropertyRowMapper<T> rowMapper = new BeanPropertyRowMapper<T>(requiredType,mapperEngine.getXmlMappedFields());
-            obj = super.queryForObject(templateSql, rowMapper);
+            obj = super.queryForObject(templateSql, rowMapper,args);
         } catch (Exception e) {
             e.printStackTrace();
             logger.debug("queryForEntity未查询到");
